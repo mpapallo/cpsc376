@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+        <title>Michaela Papallo: CPSC376 Assignment 1</title>
+		<script type="text/javascript" src="harvard.js" ></script>
+	</head>
+    <body>
+    	<h1>Harvard Art Galleries: Search Interface</h1>
+        <div id="search">
+    	   <button onclick="viewGalleries()">View Galleries</button>
+            <p>Or search objects by properties: </p>
+                Classification: <input id="classification" type="text">
+                Culture: <input id="culture" type="text">
+                Accession Year: <input id="year" type="number">
+                Division: <input id="division" type="text">
+                Period: <input id="period" type="text">
+            <p>Or search other fields: </p>
+                Person: <input type="text" id="person">
+                Exhibition: <input type="text" id="exhibition">
+                Medium: <input type="text" id="medium">
+            <p><button onclick="viewObjects()">View Objects</button></p>
+        </div>
+    	<div id="results"></div>
+    </body>
+</html>
