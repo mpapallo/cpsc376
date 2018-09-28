@@ -11,7 +11,10 @@
 // (sanitize url in server.js bc u dont want api key to get out)
 // way to parse url
 
-//const SERVER = "https://api.harvardartmuseums.org/";
+//to do:
+// [ ] multiple requests to get full data
+// [ ] authentication
+
 const SERVER = "http://localhost:3000/"
 const GALLERY = "/gallery?";
 const OBJECT = "/object?";
@@ -22,7 +25,9 @@ fetch functions
 async function getData(url){
 	//console.log("fetch ", url);
 	const response = await fetch(url);
+	//console.log(response);
 	const json = await response.json();
+	//console.log(json);
 	return json;
 }
 
@@ -33,10 +38,11 @@ async function getSearchData(url){
 //	do {
 //		document.getElementById("results").innerHTML = t[i%4]; //just so you can see that it's working not frozen
 		const json = await getData(url);
+		console.log(json.info);
 		records = records.concat(json.records);
-//		url = json.info.next;
-//		i++;
-//	} while (url); //this could mean a LOT of requests if the search is broad
+//		page++; i++;
+//		url.searchParams['page'] = page;
+//	} while (json.info.next); //this could mean a LOT of requests if the search is broad
 	return records;
 }
 
@@ -44,9 +50,10 @@ async function getSearchData(url){
 display list of galleries
 ***/
 async function viewGalleries(){
+	console.log("button clicked???");
 	//retrieve galleries
 	const url = new URL(GALLERY, SERVER);
-	const data = await getSearchData(url.href);
+	const data = await getSearchData(url);
 	//display galleries
 	let html = "<table><tr><th colspan='2'>Gallery</th></tr>";
 	data.forEach((obj) => {
@@ -55,6 +62,7 @@ async function viewGalleries(){
 		html += `<tr><td><input id="gall" type="button" onclick="viewObjectsInGallery(${num}, '${name}')"></td><td>${name}</td></tr>`;
 	});
 	html += "</table>";
+	console.log("displaying html");
 	document.getElementById("results").innerHTML = html;
 }
 
@@ -78,7 +86,7 @@ async function viewObjectsInGallery(galnum, name){
 	//retrieve objects
 	const url = new URL(OBJECT, SERVER);
 	url.searchParams.append("gallery", galnum);
-	const data = await getSearchData(url.href);
+	const data = await getSearchData(url);
 	//display objets
 	let html = "<table><tr><th colspan='2'>Objects in Gallery: " + name + "</th></tr>";
 	html += getObjectTable(data) + "</table>";
@@ -92,7 +100,7 @@ async function viewObjectDetails(id){
 	//retrieve object data
 	const url = new URL(OBJECT, SERVER);
 	url.searchParams.append("q", `objectid:${id}`);
-	const data = await getSearchData(url.href);
+	const data = await getSearchData(url);
 	const obj = data[0];
 	let html = "";
 	//retrieve images through IIIF
@@ -146,7 +154,7 @@ async function viewObjects(){
 		url.searchParams.append("q", `${prop}:${val}`);
 	}
 	//retrieve and display objects
-	const data = await getSearchData(url.href);
+	const data = await getSearchData(url);
 	html = "<table><tr><th colspan='2'>Objects</th></tr>";
 	html += getObjectTable(data) + "</table>";
 	document.getElementById("results").innerHTML = html;
