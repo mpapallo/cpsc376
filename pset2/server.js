@@ -1,21 +1,22 @@
-const URL = require('url').URL;
+const url = require('url');
+const URL = url.URL;
 require('cross-fetch/polyfill');
 
 const passport = require('passport');
 const passport_setup = require('./passport-setup');
+const keys = require('./keys');
 
 const express = require('express');
 const app = express();
-app.use(express.static('./'));
+app.use(express.static('./')); //so that root displays index.html
 app.use(express.json());
 
 const base_url = "https://api.harvardartmuseums.org/";
-const logged_in = false;
-//
+let logged_in = false;
 
 function get_url(type, queries){
   const new_url = new URL(type, base_url);
-  new_url.searchParams.append('apikey', '47f218b0-b5d5-11e8-8c0c-03e1b17d6f1e');
+  new_url.searchParams.append('apikey', keys.api.key);
   new_url.searchParams.append('size', 100);
   Object.keys(queries).forEach(key => {
     new_url.searchParams.append(key, queries[key]);
@@ -23,9 +24,8 @@ function get_url(type, queries){
   return new_url;
 }
 
-//response.sendFile(__dirname + '/index.html');
 app.get('/', (request, response) => {
-
+  //displays index.html
 });
 
 app.get('/auth/google', passport.authenticate('google',
@@ -39,26 +39,77 @@ app.get('/auth/google/callback', (request, response) => {
 });
 
 app.get('/gallery?', async (request, response) => {
-  //console.log(request);
-  console.log('fetching galleries');
-  const new_url = get_url("/gallery?", request.query);
-  const res = await fetch(new_url.href);
-  const json = await res.json();
-  response.send(json);
+  if (!logged_in) {
+    response.send({});
+  } else {
+    const json = await getData('/gallery?', request.query);
+    //console.log(json);
+    response.send(json);
+  }
 });
 
 app.get('/object?', async (request, response) => {
-  //console.log(request);
-  console.log('fetching objects');
-  const new_url = get_url("/object?", request.query);
-  const res = await fetch(new_url.href);
-  const json = await res.json();
-  if (json.info.next) {
-    json.info.next = true;
+  if (!logged_in) {
+    response.send({});
+  } else {
+    const json = await getData('/object?', request.query);
+    //console.log(json);
+    response.send(json);
   }
-  console.log(json.info);
-  response.send(json);
 });
+
+app.get('/person?', async (request, response) => {
+  if (!logged_in) {
+    response.send({});
+  } else {
+    const json = await getData('/person?', request.query);
+    //console.log(json);
+    response.send(json);
+  }
+})
+
+app.get('/exhibition?', async (request, response) => {
+  if (!logged_in) {
+    response.send({});
+  } else {
+    const json = await getData('/exhibition?', request.query);
+    response.send(json);
+  }
+});
+
+app.get('/publication?', async (request, response) => {
+  if (!logged_in) {
+    response.send({});
+  } else {
+    const json = await getData('/publication?', request.query);
+    response.send(json);
+  }
+});
+
+async function getData(type, query){
+  //console.log(request);
+  const new_url = get_url(type, query);
+  const res = await fetch(new_url);
+  const json = await res.json();
+  //console.log(json.info);
+  if (json.info.prev) {json.info.prev = null;}
+  if (json.info.next){
+    //console.log(json.info.next);
+    const new_url = url.parse(json.info.next);
+    const qstring = new_url.query;
+    const queries = qstring.split('&');
+    let pairs = [];
+    queries.forEach((q) => {
+      let p = q.split('=');
+      pairs.push(p[0]); pairs.push(p[1]);
+    })
+    let i = pairs.indexOf('page');
+    json.info.next = pairs[i+1];
+    json.info.prev = json.info.next - 2;
+    //console.log(json.info.next);
+  }
+  return json;
+}
 
 app.listen(3000, () => {
   console.log('Express running');

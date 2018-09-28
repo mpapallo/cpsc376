@@ -1,23 +1,17 @@
 // Michaela Papallo
-// CPSC 376 Assignment 1
-
-//my API key: 47f218b0-b5d5-11e8-8c0c-03e1b17d6f1e
-
-// harvard.js post url info to server.js
-// server.js does fetch using harvard url and given params and add API key
-// harvard.js get info from server.js
-
-// getting "next" and "prev" page, get params but change back to localhost ?
-// (sanitize url in server.js bc u dont want api key to get out)
-// way to parse url
-
-//to do:
-// [ ] multiple requests to get full data
-// [ ] authentication
+// CPSC 376 Assignment 2
 
 const SERVER = "http://localhost:3000/"
 const GALLERY = "/gallery?";
 const OBJECT = "/object?";
+const auth_err = 'Access Denied: Must be signed in to view results';
+
+function isEmpty(obj) {
+  for(var key in obj) {
+    if(obj.hasOwnProperty(key)) {return false;}
+  }
+  return true;
+}
 
 /***
 fetch functions
@@ -33,16 +27,21 @@ async function getData(url){
 
 async function getSearchData(url){
 	let records = [];
-//	const t = ["Loading", "Loading.", "Loading..", "Loading..."];
-//	let i = 0;
-//	do {
-//		document.getElementById("results").innerHTML = t[i%4]; //just so you can see that it's working not frozen
-		const json = await getData(url);
-		console.log(json.info);
+	const t = ["Loading", "Loading.", "Loading..", "Loading..."];
+	let i = 0;
+	let next_page = 1;
+	do {
+		document.getElementById("results").innerHTML = t[i%4]; //just so you can see that it's working not frozen
+		json = await getData(url);
+		//console.log(json);
+		if (isEmpty(json)) {return null;}
+		//console.log(json);
 		records = records.concat(json.records);
-//		page++; i++;
-//		url.searchParams['page'] = page;
-//	} while (json.info.next); //this could mean a LOT of requests if the search is broad
+		next_page = json.info.next;
+		if (next_page) {url.searchParams.set('page', next_page);}
+		//console.log(url.toString());
+		i++;
+	} while (next_page); //this could mean a LOT of requests if the search is broad
 	return records;
 }
 
@@ -50,10 +49,12 @@ async function getSearchData(url){
 display list of galleries
 ***/
 async function viewGalleries(){
-	console.log("button clicked???");
+	//console.log("button clicked???");
 	//retrieve galleries
 	const url = new URL(GALLERY, SERVER);
 	const data = await getSearchData(url);
+	//console.log('data: ', data);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
 	//display galleries
 	let html = "<table><tr><th colspan='2'>Gallery</th></tr>";
 	data.forEach((obj) => {
@@ -62,7 +63,6 @@ async function viewGalleries(){
 		html += `<tr><td><input id="gall" type="button" onclick="viewObjectsInGallery(${num}, '${name}')"></td><td>${name}</td></tr>`;
 	});
 	html += "</table>";
-	console.log("displaying html");
 	document.getElementById("results").innerHTML = html;
 }
 
@@ -87,6 +87,7 @@ async function viewObjectsInGallery(galnum, name){
 	const url = new URL(OBJECT, SERVER);
 	url.searchParams.append("gallery", galnum);
 	const data = await getSearchData(url);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
 	//display objets
 	let html = "<table><tr><th colspan='2'>Objects in Gallery: " + name + "</th></tr>";
 	html += getObjectTable(data) + "</table>";
@@ -101,6 +102,7 @@ async function viewObjectDetails(id){
 	const url = new URL(OBJECT, SERVER);
 	url.searchParams.append("q", `objectid:${id}`);
 	const data = await getSearchData(url);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
 	const obj = data[0];
 	let html = "";
 	//retrieve images through IIIF
@@ -143,9 +145,6 @@ async function viewObjects(){
 	search_params.accessionyear = document.getElementById("year").value;
 	search_params.division = document.getElementById("division").value;
 	search_params.period = document.getElementById("period").value;
-	search_params.person = document.getElementById("person").value;
-	search_params.exhibition = document.getElementById("exhibition").value;
-	search_params.medium = document.getElementById("medium").value;
 	//build search parameters
 	for (let prop in search_params){
 		if (!search_params.hasOwnProperty(prop)){ continue; }
@@ -155,7 +154,76 @@ async function viewObjects(){
 	}
 	//retrieve and display objects
 	const data = await getSearchData(url);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
 	html = "<table><tr><th colspan='2'>Objects</th></tr>";
 	html += getObjectTable(data) + "</table>";
+	document.getElementById("results").innerHTML = html;
+}
+
+async function viewPeople(){
+	//retrieve people
+	const url = new URL('/person', SERVER);
+	const name = document.getElementById("displayname").value;
+	if (name) {url.searchParams.append("q", `displayname:${name}`);}
+	const data = await getSearchData(url);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
+	//display people
+	let html = "<table><tr><th colspan='2'>People</th></tr>";
+	data.forEach((obj) => {
+		let num = obj.personid;
+		let name = obj.displayname;
+		html += `<tr><td><input id="gall" type="button" onclick="viewDetails('/person', 'personid', '${num}')"></td><td>${name}</td></tr>`;
+	});
+	html += "</table>";
+	document.getElementById("results").innerHTML = html;
+}
+
+async function viewEx(){
+	//retrieve people
+	const url = new URL('/exhibition', SERVER);
+	const data = await getSearchData(url);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
+	//display people
+	let html = "<table><tr><th colspan='2'>Exhibitions</th></tr>";
+	data.forEach((obj) => {
+		let num = obj.id;
+		let name = obj.title;
+		html += `<tr><td><input id="ex" type="button" onclick="viewDetails('/exhibition', 'id', '${num}')"></td><td>${name}</td></tr>`;
+	});
+	html += "</table>";
+	document.getElementById("results").innerHTML = html;
+}
+
+async function viewPub(){
+	//retrieve people
+	const url = new URL('/publication', SERVER);
+	const data = await getSearchData(url);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
+	//display people
+	let html = "<table><tr><th colspan='2'>Publications</th></tr>";
+	data.forEach((obj) => {
+		let num = obj.publicationid;
+		let name = obj.title;
+		html += `<tr><td><input id="ex" type="button" onclick="viewDetails('/publication', 'publicationid', '${num}')"></td><td>${name}</td></tr>`;
+	});
+	html += "</table>";
+	document.getElementById("results").innerHTML = html;
+}
+
+async function viewDetails(type, name, id){
+	const url = new URL(type, SERVER);
+	url.searchParams.append("q", `${name}:${id}`);
+	const data = await getSearchData(url);
+	//console.log(data);
+	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
+	const obj = data[0];
+	let html = "";
+	html += "<table><tr><th colspan='2'>Details</th></tr>";
+	for (let prop in obj){
+		if (!obj.hasOwnProperty(prop)){ continue; }
+		let val = obj[prop];
+		html += `<tr><td>${prop}</td><td>${val}</td></tr>`;
+	}
+	html += "</table>";
 	document.getElementById("results").innerHTML = html;
 }
