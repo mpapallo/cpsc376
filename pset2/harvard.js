@@ -35,7 +35,6 @@ async function getSearchData(url){
 		json = await getData(url);
 		//console.log(json);
 		if (isEmpty(json)) {return null;}
-		//console.log(json);
 		records = records.concat(json.records);
 		next_page = json.info.next;
 		if (next_page) {url.searchParams.set('page', next_page);}
@@ -160,6 +159,9 @@ async function viewObjects(){
 	document.getElementById("results").innerHTML = html;
 }
 
+// new stuff
+
+//same structure as ViewGalleries()
 async function viewPeople(){
 	//retrieve people
 	const url = new URL('/person', SERVER);
@@ -179,11 +181,11 @@ async function viewPeople(){
 }
 
 async function viewEx(){
-	//retrieve people
+	//retrieve
 	const url = new URL('/exhibition', SERVER);
 	const data = await getSearchData(url);
 	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
-	//display people
+	//display
 	let html = "<table><tr><th colspan='2'>Exhibitions</th></tr>";
 	data.forEach((obj) => {
 		let num = obj.id;
@@ -195,11 +197,11 @@ async function viewEx(){
 }
 
 async function viewPub(){
-	//retrieve people
+	//retrieve
 	const url = new URL('/publication', SERVER);
 	const data = await getSearchData(url);
 	if (!data) { document.getElementById("results").innerHTML = auth_err; return; }
-	//display people
+	//display
 	let html = "<table><tr><th colspan='2'>Publications</th></tr>";
 	data.forEach((obj) => {
 		let num = obj.publicationid;

@@ -14,6 +14,7 @@ app.use(express.json());
 const base_url = "https://api.harvardartmuseums.org/";
 let logged_in = false;
 
+/* build out the new url to fetch */
 function get_url(type, queries){
   const new_url = new URL(type, base_url);
   new_url.searchParams.append('apikey', keys.api.key);
@@ -92,9 +93,10 @@ async function getData(type, query){
   const res = await fetch(new_url);
   const json = await res.json();
   //console.log(json.info);
-  if (json.info.prev) {json.info.prev = null;}
+  if (json.info.prev) {json.info.prev = null;} //client doesn't use this
   if (json.info.next){
     //console.log(json.info.next);
+    //just going to return the next page number in 'next'
     const new_url = url.parse(json.info.next);
     const qstring = new_url.query;
     const queries = qstring.split('&');
